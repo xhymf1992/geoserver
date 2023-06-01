@@ -25,6 +25,10 @@ if os.path.isdir(tiffDir):
     shutil.rmtree(tiffDir) 
 os.mkdir(tiffDir)
 
+# 检查工作空间是否存在，如果不存在，则创建
+if not service.isWorkspaceExist(workspaceName):
+    service.createWorkspace(workspaceName)
+
 # 检查图层是否已存在，如果存在，则删除
 if service.isStoreExist(workspaceName, layerName):
     service.deleteStore(workspaceName, layerName)

@@ -14,6 +14,10 @@ workspaceName = "test" # geoserver 工作空间名称
 layerName = "tiff_layer" # geoserver 图层名称
 tiffPath = "" # 用于发布的TIFF文件路径
 
+# 检查工作空间是否存在，如果不存在，则创建
+if not service.isWorkspaceExist(workspaceName):
+    service.createWorkspace(workspaceName)
+
 # 检查图层是否已存在，如果存在，则删除
 if service.isStoreExist(workspaceName, layerName):
     service.deleteStore(workspaceName, layerName)
