@@ -1,0 +1,2 @@
+# geoserver
+基于geoserver-restconfig封装的geoserver发布服务类，支持shp和tif两种数据
