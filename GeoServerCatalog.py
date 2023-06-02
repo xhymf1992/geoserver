@@ -3,6 +3,14 @@ from geoserver.catalog import Catalog, ConflictingDataError, _name, FailedReques
 from geoserver.store import UnsavedCoverageStore
 from geoserver.support import build_url
 
+import requests
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 class GeoServerCatalog(Catalog):
     """
@@ -107,3 +115,31 @@ class GeoServerCatalog(Catalog):
                 raise FailedRequestError('Failed to create coverage/layer {} for : {}, {}'.format(layer_name, name, resp.status_code, resp.text))
 
         return self.get_stores(names=name, workspaces=[workspace])[0]
+    
+    def setup_connection(self, retries=3, backoff_factor=0.9):
+        self.client = requests.session()
+        self.client.verify = self.validate_ssl_certificate
+        parsed_url = urlparse(self.service_url)
+
+        try:
+            retry = Retry(
+                total = retries or self.retries,
+                status = retries or self.retries,
+                read = retries or self.retries,
+                connect = retries or self.retries,
+                backoff_factor = backoff_factor or self.backoff_factor,
+                status_forcelist = [502, 503, 504],
+                allowed_methods = set(['HEAD', 'TRACE', 'GET', 'PUT', 'POST', 'OPTIONS', 'DELETE'])
+            ) # allowed_methods : requests > 2.22.0
+        except TypeError:
+            retry = Retry(
+                total = retries or self.retries,
+                status = retries or self.retries,
+                read = retries or self.retries,
+                connect = retries or self.retries,
+                backoff_factor = backoff_factor or self.backoff_factor,
+                status_forcelist = [502, 503, 504],
+                method_whitelist = set(['HEAD', 'TRACE', 'GET', 'PUT', 'POST', 'OPTIONS', 'DELETE'])
+            ) # method_whitelist : requests <= 2.22.0
+
+        self.client.mount(f"{parsed_url.scheme}://", HTTPAdapter(max_retries=retry))
